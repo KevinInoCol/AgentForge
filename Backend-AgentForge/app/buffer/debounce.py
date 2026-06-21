@@ -23,6 +23,13 @@ _tasks: set[asyncio.Task] = set()
 ProcessCallback = Callable[[str], Awaitable[None]]
 
 
+def _spawn(coro) -> None:
+    """Lanza una corrutina en segundo plano (ack rápido) y guarda referencia fuerte."""
+    task = asyncio.create_task(coro)
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
+
+
 def _msgs_key(buffer_id: str) -> str:
     return f"agentforge:buffer:msgs:{buffer_id}"
 
@@ -32,13 +39,16 @@ def _seq_key(buffer_id: str) -> str:
 
 
 async def enqueue_message(buffer_id: str, text: str, process: ProcessCallback) -> None:
-    """Acumula `text` y programa el flush. `process(concatenado)` se llama una vez.
+    """Encola el mensaje y devuelve el control de inmediato (ACK rápido).
 
-    Si el buffer está deshabilitado O Redis no está disponible, responde directo
-    (mensaje por mensaje) en vez de fallar. Así el debounce es opcional.
+    El procesamiento (LLM + envío) corre en segundo plano, así el webhook le
+    responde 200 a GHL al instante y muchos mensajes se procesan en paralelo.
+
+    Si el buffer está deshabilitado O Redis no está disponible, procesa directo
+    (mensaje por mensaje) en background. Así el debounce es opcional.
     """
     if not settings.buffer_enabled:
-        await process(text)
+        _spawn(process(text))  # ACK rápido: no esperamos al LLM
         return
 
     try:
@@ -50,12 +60,10 @@ async def enqueue_message(buffer_id: str, text: str, process: ProcessCallback) -
         await r.expire(msgs_key, settings.buffer_ttl_seconds)
         await r.expire(seq_key, settings.buffer_ttl_seconds)
 
-        task = asyncio.create_task(_wait_and_process(buffer_id, my_seq, process))
-        _tasks.add(task)
-        task.add_done_callback(_tasks.discard)
+        _spawn(_wait_and_process(buffer_id, my_seq, process))
     except Exception:  # noqa: BLE001 — Redis caído no debe romper la respuesta
         logger.warning("Redis no disponible; respondiendo sin debounce", exc_info=False)
-        await process(text)
+        _spawn(process(text))
 
 
 async def _wait_and_process(buffer_id: str, my_seq: int, process: ProcessCallback) -> None:

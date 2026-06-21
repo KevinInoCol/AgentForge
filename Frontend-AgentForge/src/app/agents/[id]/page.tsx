@@ -63,19 +63,21 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
     };
   }
 
-  async function persist(opts: { publish: boolean }) {
+  async function persist(opts: { setPublished?: boolean } = {}) {
     setSaving(true);
     setError(null);
     setNotice(null);
     try {
       const patch: Record<string, unknown> = { name, system_prompt: prompt, model, temperature, enabled };
-      if (opts.publish) {
+      if (opts.setPublished === true) {
         patch.enabled = true;
         patch.published = true;
+      } else if (opts.setPublished === false) {
+        patch.published = false;
       }
       await updateAgent(id, patch);
       setDirty(false);
-      if (opts.publish) {
+      if (opts.setPublished === true) {
         setEnabled(true);
         setPublished(true);
         const ws = agent ? await getWorkspace(agent.location_id).catch(() => null) : null;
@@ -84,6 +86,9 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
             ? "✅ Publicado y en vivo. Ya recibe mensajes reales."
             : "✅ Publicado. Conecta HighLevel en 🔑 Credenciales para que reciba mensajes reales.",
         );
+      } else if (opts.setPublished === false) {
+        setPublished(false);
+        setNotice("⏸ Despublicado. El agente ya no responde mensajes reales.");
       } else {
         setNotice("✅ Guardado. El Chat Lab ya usa esta versión.");
       }
@@ -135,12 +140,18 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
           <select className="badge" style={{ width: "auto" }} value={model} onChange={(e) => mark(setModel)(e.target.value)}>
             {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
-          <button className="btn secondary" onClick={() => persist({ publish: false })} disabled={saving || !dirty}>
+          <button className="btn secondary" onClick={() => persist()} disabled={saving || !dirty}>
             {saving ? "Guardando…" : "Guardar"}
           </button>
-          <button className="btn" onClick={() => persist({ publish: true })} disabled={saving}>
-            Publicar
-          </button>
+          {published ? (
+            <button className="btn secondary" onClick={() => persist({ setPublished: false })} disabled={saving} title="Sacar de línea: deja de responder mensajes reales">
+              Despublicar
+            </button>
+          ) : (
+            <button className="btn" onClick={() => persist({ setPublished: true })} disabled={saving}>
+              Publicar
+            </button>
+          )}
         </div>
       </div>
 
