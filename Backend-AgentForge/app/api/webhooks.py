@@ -47,25 +47,25 @@ async def ghl_inbound(request: Request):
 
     location_id = data.get("locationId")
     contact_id = data.get("contactId")
-    text = data.get("message") or data.get("body")
+    text = data.get("message") or data.get("body") or ""
+    audio_url = data.get("multimedia") or None  # URL del adjunto (nota de voz)
     channel = _normalize_channel(data.get("messageType") or data.get("type"))
 
-    if not (location_id and contact_id and text):
-        if location_id and contact_id and not text:
-            # Sin texto = posible audio/adjunto. Logueamos el payload completo
-            # para descubrir dónde viene la URL del audio (diagnóstico temporal).
-            logger.warning("[audio?] Mensaje sin texto. PAYLOAD COMPLETO=%s", payload)
-        else:
-            logger.warning("Payload incompleto. customData=%s", data)
+    # Necesitamos tenant + contacto, y al menos texto O audio.
+    if not location_id or not contact_id or (not text and not audio_url):
+        logger.warning(
+            "Payload sin contenido procesable (loc=%s contact=%s text=%s audio=%s)",
+            location_id, contact_id, bool(text), bool(audio_url),
+        )
         return {"received": False, "reason": "missing fields"}
 
     async def _process(combined: str) -> None:
         try:
-            await process_turn(location_id, contact_id, combined, channel=channel)
+            await process_turn(location_id, contact_id, combined, channel=channel, audio_url=audio_url)
         except Exception:  # noqa: BLE001 — no romper el buffer por un fallo de turno
             logger.exception("Error procesando turno (%s/%s)", location_id, contact_id)
 
     buffer_id = f"{location_id}:{contact_id}"
-    await enqueue_message(buffer_id, text, _process)
+    await enqueue_message(buffer_id, text, _process)  # audio: text="" → se transcribe en process_turn
 
     return {"received": True}

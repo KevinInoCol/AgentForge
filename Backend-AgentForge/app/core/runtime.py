@@ -7,6 +7,7 @@ import logging
 
 from app.chat_history import append_message, get_or_create_conversation, load_history
 from app.core.agent_factory import TenantAgentConfig, build_agent, resolve_openai_key
+from app.core.transcription import transcribe_audio
 from app.db.queries import get_active_agent_for_location, get_location_by_ghl_id
 from app.integrations.ghl.client import GHLClient
 
@@ -14,10 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 async def process_turn(
-    ghl_location_id: str, contact_id: str, text: str, channel: str = "SMS"
+    ghl_location_id: str,
+    contact_id: str,
+    text: str,
+    channel: str = "SMS",
+    audio_url: str | None = None,
 ) -> None:
-    """Procesa el mensaje (ya concatenado) y responde por GHL."""
-    logger.warning("[turn] loc=%s contact=%s canal=%s texto=%r", ghl_location_id, contact_id, channel, text)
+    """Procesa el mensaje (texto o audio) y responde por GHL."""
+    logger.warning(
+        "[turn] loc=%s contact=%s canal=%s texto=%r audio=%s",
+        ghl_location_id, contact_id, channel, text, bool(audio_url),
+    )
 
     # 1. Tenant + token
     location = await get_location_by_ghl_id(ghl_location_id)
@@ -44,6 +52,17 @@ async def process_turn(
     api_key = resolve_openai_key(location)
     if not api_key:
         logger.warning("[turn] ❌ Sin OpenAI key en el workspace (ponla en Credenciales OpenAI)")
+        return
+
+    # 3.5. Si vino un audio (sin texto), transcribirlo con Whisper.
+    if not text and audio_url:
+        try:
+            text = await transcribe_audio(audio_url, api_key)
+        except Exception:  # noqa: BLE001
+            logger.exception("[turn] ❌ Falló la transcripción del audio")
+            return
+    if not text:
+        logger.warning("[turn] ❌ Sin texto que procesar (¿audio vacío?)")
         return
 
     # 4. Historial + agente (con la OpenAI key de la sub-cuenta)
