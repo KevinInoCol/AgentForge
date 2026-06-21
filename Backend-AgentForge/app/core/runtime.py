@@ -17,37 +17,50 @@ async def process_turn(
     ghl_location_id: str, contact_id: str, text: str, channel: str = "SMS"
 ) -> None:
     """Procesa el mensaje (ya concatenado) y responde por GHL."""
+    logger.warning("[turn] loc=%s contact=%s canal=%s texto=%r", ghl_location_id, contact_id, channel, text)
+
     # 1. Tenant + token
     location = await get_location_by_ghl_id(ghl_location_id)
     if not location:
-        logger.warning("Sub-cuenta desconocida: %s", ghl_location_id)
+        logger.warning("[turn] ❌ Sub-cuenta desconocida: %s (conéctala en Credenciales HighLevel)", ghl_location_id)
         return
 
     # 2. Agente activo de la sub-cuenta
     agent_row = await get_active_agent_for_location(location["id"])
     if not agent_row:
-        logger.info("Sin agente activo para %s", ghl_location_id)
+        logger.warning("[turn] ❌ Sin agente PUBLICADO en el workspace %s (publícalo)", location["id"])
         return
 
     # 3. Conversación + guarda de handoff humano
     conversation = await get_or_create_conversation(location["id"], contact_id)
     if conversation.get("human_handoff"):
-        logger.info("Handoff humano activo; IA en pausa (%s)", contact_id)
+        logger.warning("[turn] ⏸ Handoff humano activo; IA en pausa (%s)", contact_id)
+        return
+
+    if not location.get("private_integration_token"):
+        logger.warning("[turn] ❌ Sin PIT en el workspace; no se puede responder a GHL")
+        return
+
+    api_key = resolve_openai_key(location)
+    if not api_key:
+        logger.warning("[turn] ❌ Sin OpenAI key en el workspace (ponla en Credenciales OpenAI)")
         return
 
     # 4. Historial + agente (con la OpenAI key de la sub-cuenta)
     history = await load_history(conversation["id"])
     cfg = TenantAgentConfig.from_row(agent_row)
-    agent = build_agent(cfg, api_key=resolve_openai_key(location))
+    agent = build_agent(cfg, api_key=api_key)
 
     messages = history + [{"role": "user", "content": text}]
     result = await agent.ainvoke({"messages": messages})
     reply = result["messages"][-1].content
+    logger.warning("[turn] 🤖 respuesta generada: %r", reply[:120])
 
     # 5. Enviar respuesta por el mismo canal
     client = GHLClient(location["private_integration_token"])
     try:
         await client.send_message(contact_id, reply, channel=channel)
+        logger.warning("[turn] ✅ enviado a GHL (contact=%s, canal=%s)", contact_id, channel)
     finally:
         await client.aclose()
 
