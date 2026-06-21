@@ -7,7 +7,7 @@ cambiamos o mejoramos algo, aquí está el registro completo.
 - Todas las tablas llevan prefijo **`agentforge_`** (para no chocar con otras tablas del proyecto).
 - El backend usa la **service_role key** → ignora RLS. El frontend NO consulta Supabase directo (pasa por la API), así que **RLS no es necesario** en el MVP.
 - Búsqueda vectorial vía función RPC (`match_agentforge_chunks`) → **no se necesita `DATABASE_URL`**.
-- Embeddings: `text-embedding-3-small` → **vector(1536)**.
+- Embeddings: `text-embedding-3-large` **truncado a 1536 dims** (param `dimensions`) → columna **vector(1536)** + índice ivfflat (límite 2000 dims). Si cambias el modelo de embeddings, **re-indexa** los documentos (los vectores de modelos distintos no son comparables).
 
 ---
 

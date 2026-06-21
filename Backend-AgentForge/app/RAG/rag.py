@@ -1,42 +1,38 @@
-"""Pipeline de indexación del knowledge base — POR AGENTE.
+"""RAG · Orquestador.
 
-Sube un documento (PDF/TXT) → extrae texto → trocea → embeddings → guarda en
-agentforge_knowledge_chunks (pgvector). La búsqueda vive en tools/knowledge.py.
+Encadena las etapas del pipeline. Cada etapa vive en su propio módulo, así
+sabemos qué tenemos y podemos mejorar cada una por separado (mejor parser,
+otro chunking, otro modelo de embeddings, otro vector store).
+
+  1. extraction   → texto plano (PDF/TXT)
+  2. chunking     → fragmentos
+  3. embedding    → vectores
+  4. vector_store → persistir en pgvector
 """
-import io
 import logging
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from app.core.embeddings import embed_texts
-from app.db.queries import insert_chunks, insert_document
+from app.RAG.chunking import chunk_text
+from app.RAG.embedding import embed_texts
+from app.RAG.extraction import extract_text
+from app.RAG.vector_store import store_chunks
+from app.db.queries import insert_document
 
 logger = logging.getLogger(__name__)
 
-_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-
-
-def extract_text(filename: str, data: bytes) -> str:
-    """Extrae texto plano de un PDF o TXT."""
-    if filename.lower().endswith(".pdf"):
-        from pypdf import PdfReader
-
-        reader = PdfReader(io.BytesIO(data))
-        return "\n".join((page.extract_text() or "") for page in reader.pages)
-    return data.decode("utf-8", errors="replace")
-
 
 async def ingest_document(agent_id: str, filename: str, data: bytes, api_key: str) -> int:
-    """Procesa un documento y guarda sus fragmentos. Devuelve nº de chunks."""
-    text = extract_text(filename, data).strip()
+    """Procesa un documento por todas las etapas. Devuelve nº de fragmentos."""
+    text = extract_text(filename, data)            # 1. Extracción
     if not text:
         return 0
-    chunks = _splitter.split_text(text)
+
+    chunks = chunk_text(text)                       # 2. Chunking
     if not chunks:
         return 0
 
-    embeddings = await embed_texts(chunks, api_key)
-    doc = await insert_document(agent_id, filename)
-    await insert_chunks(agent_id, doc["id"], chunks, embeddings)
-    logger.warning("[kb] documento '%s' indexado: %d fragmentos (agente %s)", filename, len(chunks), agent_id)
+    embeddings = await embed_texts(chunks, api_key)  # 3. Embeddings
+    doc = await insert_document(agent_id, filename)  # metadata del documento
+    await store_chunks(agent_id, doc["id"], chunks, embeddings)  # 4. Vector store
+
+    logger.warning("[kb] '%s' indexado: %d fragmentos (agente %s)", filename, len(chunks), agent_id)
     return len(chunks)

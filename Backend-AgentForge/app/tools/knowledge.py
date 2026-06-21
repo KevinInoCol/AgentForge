@@ -11,8 +11,8 @@ import logging
 
 from langchain_core.tools import StructuredTool
 
-from app.core.embeddings import embed_query
-from app.db.queries import match_chunks
+from app.RAG.embedding import embed_query
+from app.RAG.vector_store import similarity_search
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def get_knowledge_tool(agent_id: str, api_key: str) -> StructuredTool:
         """Busca información del negocio en la Base de Conocimiento."""
         try:
             embedding = await embed_query(consulta, api_key)
-            rows = await match_chunks(agent_id, embedding, k=5)
+            rows = await similarity_search(agent_id, embedding, k=5)
         except Exception:  # noqa: BLE001
             logger.exception("[kb] error buscando en la base de conocimiento")
             return "No se pudo consultar la base de conocimiento en este momento."
