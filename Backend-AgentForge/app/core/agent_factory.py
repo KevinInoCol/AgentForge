@@ -44,14 +44,12 @@ class TenantAgentConfig:
         )
 
 
-def build_agent(cfg: TenantAgentConfig, api_key: str | None = None):
+def build_agent(cfg: TenantAgentConfig, api_key: str | None = None, tools: list | None = None):
     """Devuelve un agente LangChain listo para .ainvoke({"messages": [...]}).
 
     `api_key`: API key de OpenAI a usar (la de la sub-cuenta). Si es None,
     init_chat_model cae a la variable de entorno OPENAI_API_KEY.
-
-    MVP: sin tools ni RAG (Fase 1). En fases siguientes se inyectan las tools de
-    app/tools/ (ligadas al tenant) y el retriever de app/RAG/.
+    `tools`: herramientas que el agente puede llamar (ej. Base de Conocimiento).
     """
     kwargs = {"temperature": cfg.temperature}
     if api_key:
@@ -59,6 +57,6 @@ def build_agent(cfg: TenantAgentConfig, api_key: str | None = None):
     model = init_chat_model(f"openai:{cfg.model}", **kwargs)
     return create_agent(
         model=model,
-        tools=[],  # Fase 1: sin tools todavía
+        tools=tools or [],
         system_prompt=cfg.system_prompt,
     )

@@ -1,23 +1,42 @@
-"""Pipeline de indexación del knowledge base — POR TENANT.
+"""Pipeline de indexación del knowledge base — POR AGENTE.
 
-Cada agente tiene su propio knowledge base. Los chunks se guardan en pgvector
-con su `agent_id` (o `location_id`) para aislar el retrieval entre clientes.
-Aquí va SOLO indexación; la config de retrieval (top_k) vive en tools/.
+Sube un documento (PDF/TXT) → extrae texto → trocea → embeddings → guarda en
+agentforge_knowledge_chunks (pgvector). La búsqueda vive en tools/knowledge.py.
 """
+import io
+import logging
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from app.core.embeddings import embed_texts
+from app.db.queries import insert_chunks, insert_document
+
+logger = logging.getLogger(__name__)
+
+_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
 
 
-async def index_document(agent_id: str, file_bytes: bytes, filename: str) -> int:
-    """Carga, trocea, embebe y persiste un documento. Devuelve nº de chunks.
+def extract_text(filename: str, data: bytes) -> str:
+    """Extrae texto plano de un PDF o TXT."""
+    if filename.lower().endswith(".pdf"):
+        from pypdf import PdfReader
 
-    TODO:
-      - loader según tipo (pdf/txt/docx)
-      - splitter (chunk_size / chunk_overlap)
-      - embeddings (OpenAI) -> insertar en tabla `knowledge_chunks` con agent_id
-    """
-    raise NotImplementedError
+        reader = PdfReader(io.BytesIO(data))
+        return "\n".join((page.extract_text() or "") for page in reader.pages)
+    return data.decode("utf-8", errors="replace")
 
 
-def get_retriever(agent_id: str, top_k: int = 5):
-    """Devuelve un retriever de pgvector FILTRADO por agent_id (aislamiento)."""
-    # TODO: PGVector(...).as_retriever(search_kwargs={"k": top_k, "filter": {agent_id}})
-    raise NotImplementedError
+async def ingest_document(agent_id: str, filename: str, data: bytes, api_key: str) -> int:
+    """Procesa un documento y guarda sus fragmentos. Devuelve nº de chunks."""
+    text = extract_text(filename, data).strip()
+    if not text:
+        return 0
+    chunks = _splitter.split_text(text)
+    if not chunks:
+        return 0
+
+    embeddings = await embed_texts(chunks, api_key)
+    doc = await insert_document(agent_id, filename)
+    await insert_chunks(agent_id, doc["id"], chunks, embeddings)
+    logger.warning("[kb] documento '%s' indexado: %d fragmentos (agente %s)", filename, len(chunks), agent_id)
+    return len(chunks)

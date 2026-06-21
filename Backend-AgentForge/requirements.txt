@@ -3,6 +3,8 @@ uvicorn[standard]
 pydantic
 pydantic-settings
 python-dotenv
+python-multipart
+pypdf
 
 # LangChain (create_agent vive en langchain.agents y usa langgraph por debajo)
 langchain

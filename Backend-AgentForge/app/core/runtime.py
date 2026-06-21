@@ -8,8 +8,13 @@ import logging
 from app.chat_history import append_message, get_or_create_conversation, load_history
 from app.core.agent_factory import TenantAgentConfig, build_agent, resolve_openai_key
 from app.core.transcription import transcribe_audio
-from app.db.queries import get_active_agent_for_location, get_location_by_ghl_id
+from app.db.queries import (
+    agent_has_knowledge,
+    get_active_agent_for_location,
+    get_location_by_ghl_id,
+)
 from app.integrations.ghl.client import GHLClient
+from app.tools.knowledge import get_knowledge_tool
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +73,10 @@ async def process_turn(
     # 4. Historial + agente (con la OpenAI key de la sub-cuenta)
     history = await load_history(conversation["id"])
     cfg = TenantAgentConfig.from_row(agent_row)
-    agent = build_agent(cfg, api_key=api_key)
+    tools = []
+    if await agent_has_knowledge(cfg.agent_id):
+        tools.append(get_knowledge_tool(cfg.agent_id, api_key))
+    agent = build_agent(cfg, api_key=api_key, tools=tools)
 
     messages = history + [{"role": "user", "content": text}]
     result = await agent.ainvoke({"messages": messages})

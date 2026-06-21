@@ -114,6 +114,34 @@ export async function generateAgent(
   });
 }
 
+// ── Base de conocimiento ────────────────────────────────────────
+export type KnowledgeDoc = { id: string; filename: string; created_at: string };
+
+export async function listKnowledge(agentId: string): Promise<{ documents: KnowledgeDoc[] }> {
+  return req(`/api/agents/${agentId}/knowledge`);
+}
+
+export async function uploadKnowledge(agentId: string, file: File) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/api/agents/${agentId}/knowledge`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form, // sin Content-Type: el navegador pone el multipart boundary
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail ?? `Error ${res.status}`);
+  }
+  return res.json() as Promise<{ filename: string; chunks: number }>;
+}
+
+export async function deleteKnowledge(agentId: string, documentId: string) {
+  return req(`/api/agents/${agentId}/knowledge/${documentId}`, { method: "DELETE" });
+}
+
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export async function chatAgent(agentId: string, messages: ChatMessage[]): Promise<{ reply: string }> {

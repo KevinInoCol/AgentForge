@@ -166,3 +166,94 @@ async def delete_agent_row(agent_id: str) -> None:
         return get_supabase().table("agentforge_agents").delete().eq("id", agent_id).execute()
 
     await asyncio.to_thread(_q)
+
+
+# ── Base de conocimiento (RAG) ───────────────────────────────────────
+
+async def insert_document(agent_id: str, filename: str) -> dict:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_knowledge_documents")
+            .insert({"agent_id": agent_id, "filename": filename})
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0]
+
+
+async def insert_chunks(agent_id: str, document_id: str, chunks: list[str], embeddings: list[list[float]]) -> None:
+    rows = [
+        {"agent_id": agent_id, "document_id": document_id, "content": c, "embedding": e}
+        for c, e in zip(chunks, embeddings)
+    ]
+
+    def _q():
+        return get_supabase().table("agentforge_knowledge_chunks").insert(rows).execute()
+
+    await asyncio.to_thread(_q)
+
+
+async def list_documents(agent_id: str) -> list[dict]:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_knowledge_documents")
+            .select("id, filename, created_at")
+            .eq("agent_id", agent_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
+async def delete_document(document_id: str) -> None:
+    def _q():
+        # Los chunks se borran en cascada (FK on delete cascade).
+        return get_supabase().table("agentforge_knowledge_documents").delete().eq("id", document_id).execute()
+
+    await asyncio.to_thread(_q)
+
+
+async def get_document(document_id: str) -> dict | None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_knowledge_documents")
+            .select("id, agent_id, filename")
+            .eq("id", document_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
+async def agent_has_knowledge(agent_id: str) -> bool:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_knowledge_documents")
+            .select("id")
+            .eq("agent_id", agent_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return bool(res.data)
+
+
+async def match_chunks(agent_id: str, query_embedding: list[float], k: int = 5) -> list[dict]:
+    def _q():
+        return get_supabase().rpc(
+            "match_agentforge_chunks",
+            {"p_agent_id": agent_id, "p_query_embedding": query_embedding, "p_match_count": k},
+        ).execute()
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []

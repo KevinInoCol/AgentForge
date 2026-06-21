@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { ChatLab } from "@/components/ChatLab";
+import { KnowledgeBase } from "@/components/KnowledgeBase";
 import { generateAgent, getAgent, getWorkspace, updateAgent, type Agent } from "@/lib/api";
 
 const TABS = ["Builder", "Chat Lab", "Knowledge Lab"] as const;
@@ -159,7 +160,7 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
 
       <div className="editor-tabs">
         {TABS.map((t) => {
-          const enabledTab = t === "Builder" || t === "Chat Lab";
+          const enabledTab = t === "Builder" || t === "Chat Lab" || t === "Knowledge Lab";
           return (
             <div
               key={t}
@@ -175,6 +176,7 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
       {error && <div className="error">{error}</div>}
 
       {tab === "Chat Lab" && <ChatLab agentId={agent.id} />}
+      {tab === "Knowledge Lab" && <KnowledgeBase agentId={agent.id} />}
 
       {tab === "Builder" && (
       <div className="builder">
