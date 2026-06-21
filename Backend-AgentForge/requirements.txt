@@ -1,0 +1,23 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+
+# LangChain (create_agent vive en langchain.agents y usa langgraph por debajo)
+langchain
+langgraph
+langchain-openai
+langchain-community
+langchain-postgres
+
+# Supabase / Postgres / pgvector
+supabase
+psycopg[binary]
+pgvector
+
+# Buffer / cola
+redis
+
+# HTTP
+httpx

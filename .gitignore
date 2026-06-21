@@ -1,0 +1,18 @@
+# Secretos / entorno
+.env
+.env.local
+*.env
+
+# Python
+.venv
+__pycache__/
+*.pyc
+
+# Node / Next
+node_modules/
+.next/
+.vercel
+
+# OS / logs
+.DS_Store
+*.log
