@@ -9,10 +9,13 @@ Para el MVP las tareas corren en el mismo proceso FastAPI (asyncio). Cuando
 escalemos, esto se mueve a una cola + workers (app/workers/).
 """
 import asyncio
+import logging
 from typing import Awaitable, Callable
 
 from app.buffer.redis_client import get_redis
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Mantener referencias fuertes para que el GC no cancele las tareas.
 _tasks: set[asyncio.Task] = set()
@@ -29,23 +32,30 @@ def _seq_key(buffer_id: str) -> str:
 
 
 async def enqueue_message(buffer_id: str, text: str, process: ProcessCallback) -> None:
-    """Acumula `text` y programa el flush. `process(concatenado)` se llama una vez."""
+    """Acumula `text` y programa el flush. `process(concatenado)` se llama una vez.
+
+    Si el buffer está deshabilitado O Redis no está disponible, responde directo
+    (mensaje por mensaje) en vez de fallar. Así el debounce es opcional.
+    """
     if not settings.buffer_enabled:
-        # Fallback: responde mensaje por mensaje.
         await process(text)
         return
 
-    r = get_redis()
-    msgs_key, seq_key = _msgs_key(buffer_id), _seq_key(buffer_id)
+    try:
+        r = get_redis()
+        msgs_key, seq_key = _msgs_key(buffer_id), _seq_key(buffer_id)
 
-    await r.rpush(msgs_key, text)
-    my_seq = await r.incr(seq_key)
-    await r.expire(msgs_key, settings.buffer_ttl_seconds)
-    await r.expire(seq_key, settings.buffer_ttl_seconds)
+        await r.rpush(msgs_key, text)
+        my_seq = await r.incr(seq_key)
+        await r.expire(msgs_key, settings.buffer_ttl_seconds)
+        await r.expire(seq_key, settings.buffer_ttl_seconds)
 
-    task = asyncio.create_task(_wait_and_process(buffer_id, my_seq, process))
-    _tasks.add(task)
-    task.add_done_callback(_tasks.discard)
+        task = asyncio.create_task(_wait_and_process(buffer_id, my_seq, process))
+        _tasks.add(task)
+        task.add_done_callback(_tasks.discard)
+    except Exception:  # noqa: BLE001 — Redis caído no debe romper la respuesta
+        logger.warning("Redis no disponible; respondiendo sin debounce", exc_info=False)
+        await process(text)
 
 
 async def _wait_and_process(buffer_id: str, my_seq: int, process: ProcessCallback) -> None:

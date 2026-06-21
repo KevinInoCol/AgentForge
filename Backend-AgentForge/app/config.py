@@ -24,7 +24,8 @@ class Settings(BaseSettings):
     ghl_api_version: str = "2021-04-15"  # header Version para Conversations API v2
 
     # Buffer / debounce (ver skill message-concatenation-buffer)
-    buffer_enabled: bool = True
+    # Default False: requiere Redis. Actívalo (BUFFER_ENABLED=true + REDIS_URL) cuando lo montes.
+    buffer_enabled: bool = False
     buffer_window_seconds: int = 8
     buffer_ttl_seconds: int = 300
     buffer_separator: str = "\n"
