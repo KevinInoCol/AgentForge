@@ -20,6 +20,11 @@ app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(workspaces.router, prefix="/api/workspaces", tags=["workspaces"])
 
 
+@app.get("/")
+def root():
+    return {"service": "AgentForge API", "status": "ok", "docs": "/docs"}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
