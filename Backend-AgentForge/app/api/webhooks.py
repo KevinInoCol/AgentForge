@@ -51,7 +51,12 @@ async def ghl_inbound(request: Request):
     channel = _normalize_channel(data.get("messageType") or data.get("type"))
 
     if not (location_id and contact_id and text):
-        logger.warning("Payload incompleto. customData=%s", data)
+        if location_id and contact_id and not text:
+            # Sin texto = posible audio/adjunto. Logueamos el payload completo
+            # para descubrir dónde viene la URL del audio (diagnóstico temporal).
+            logger.warning("[audio?] Mensaje sin texto. PAYLOAD COMPLETO=%s", payload)
+        else:
+            logger.warning("Payload incompleto. customData=%s", data)
         return {"received": False, "reason": "missing fields"}
 
     async def _process(combined: str) -> None:
