@@ -35,7 +35,9 @@ a { color: inherit; text-decoration: none; }
   padding: 16px 12px;
 }
 
-.brand { display: flex; align-items: center; gap: 11px; padding: 8px 8px 20px; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 6px 4px 16px; }
+.brand-logo { width: 100%; height: auto; display: block; border-radius: 8px; }
+/* (estilos antiguos del monograma, por si se reusan) */
 .brand .mark {
   width: 42px; height: 42px; border-radius: 11px;
   background: linear-gradient(135deg, var(--accent-2), #a29bfe);

@@ -34,9 +34,9 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
       <form onSubmit={handleLogin} className="panel" style={{ width: "100%", maxWidth: 380, padding: 28 }}>
-        <div className="brand" style={{ padding: "0 0 18px" }}>
-          <div className="mark">A</div>
-          <div className="name">AgentForge</div>
+        <div style={{ textAlign: "center", paddingBottom: 8 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/Logo-AgentForge.png" alt="AgentForge" style={{ width: "100%", maxWidth: 280, height: "auto" }} />
         </div>
         <h1 style={{ fontSize: 18, marginBottom: 2 }}>Inicia sesión</h1>
         <p className="muted" style={{ marginTop: 0 }}>Entra con tu cuenta para gestionar tus agentes.</p>

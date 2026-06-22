@@ -75,8 +75,8 @@ export function AppShell({
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="mark">A</div>
-          <div className="name">AgentForge</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/Logo-AgentForge.png" alt="AgentForge" className="brand-logo" />
         </div>
 
         {GROUPS.map((g) => (
