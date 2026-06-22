@@ -35,13 +35,13 @@ a { color: inherit; text-decoration: none; }
   padding: 16px 12px;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 18px; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 8px 8px 20px; }
 .brand .mark {
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 42px; height: 42px; border-radius: 11px;
   background: linear-gradient(135deg, var(--accent-2), #a29bfe);
-  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 22px;
 }
-.brand .name { font-weight: 700; font-size: 15px; }
+.brand .name { font-weight: 700; font-size: 19px; }
 
 .nav-group { margin-top: 14px; }
 .nav-label { font-size: 10px; letter-spacing: 0.08em; color: var(--muted); padding: 0 8px 6px; text-transform: uppercase; }
