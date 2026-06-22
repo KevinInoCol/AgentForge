@@ -17,7 +17,7 @@ const PLANS: Plan[] = [
     period: "/mes",
     features: [
       "Hasta 3 agentes",
-      "Base de Conocimiento (hasta 5 documentos)",
+      "Base de Conocimiento (hasta 5 documentos por agente)",
       "Canales: WhatsApp, Facebook, Instagram, SMS",
       "Lectura de texto y audios (notas de voz)",
       "Mensajes ilimitados",
@@ -32,7 +32,7 @@ const PLANS: Plan[] = [
     highlight: true,
     features: [
       "Hasta 5 agentes",
-      "Base de Conocimiento (hasta 30 documentos)",
+      "Base de Conocimiento (hasta 30 documentos por agente)",
       "Tools: agendamiento, etiquetas (tags), campos personalizados",
       "Canales: WhatsApp, Facebook, Instagram, SMS",
       "Lectura de texto y audios",
@@ -42,7 +42,7 @@ const PLANS: Plan[] = [
   },
   {
     name: "Agencia",
-    price: "A medida",
+    price: "No disponible aún",
     period: "",
     features: [
       "Agentes ilimitados",
@@ -72,7 +72,7 @@ export default function PlanesPage() {
           <div key={p.name} className={`plan-card ${p.highlight ? "highlight" : ""}`}>
             {p.tag && <span className="plan-tag">{p.tag}</span>}
             <div className="plan-name">{p.name}</div>
-            <div className="plan-price">
+            <div className="plan-price" style={p.price.startsWith("$") ? {} : { fontSize: 18 }}>
               {p.price}
               {p.period && <small>{p.period}</small>}
             </div>
@@ -82,7 +82,7 @@ export default function PlanesPage() {
               ))}
             </ul>
             <button className={`btn ${p.highlight ? "" : "secondary"}`} style={{ marginTop: 18, justifyContent: "center" }} disabled>
-              {p.price === "A medida" ? "Contactar" : "Próximamente"}
+              {p.price.startsWith("$") ? "Próximamente" : "No disponible aún"}
             </button>
           </div>
         ))}
