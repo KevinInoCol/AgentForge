@@ -40,20 +40,23 @@ function Menu({ onPick }: { onPick: (s: Step) => void }) {
       <h2>Crear asistente</h2>
       <p className="muted">¿Cómo quieres crear tu próximo asistente?</p>
       <div className="card-grid">
-        <button className="opt-card" onClick={() => onPick("template")}>
+        <button className="opt-card" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
           <div className="opt-ico">🗂️</div>
           <strong>Desde plantilla</strong>
           <span className="muted">Parte de una plantilla afinada (ventas, soporte, agendamiento, e-commerce).</span>
+          <span className="plan-tag" style={{ background: "var(--muted)", marginTop: 6 }}>No disponible aún</span>
         </button>
-        <button className="opt-card" onClick={() => onPick("generate")}>
+        <button className="opt-card" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
           <div className="opt-ico">✨</div>
           <strong>Generar con IA</strong>
           <span className="muted">Describe tu negocio y la IA redacta el asistente por ti.</span>
+          <span className="plan-tag" style={{ background: "var(--muted)", marginTop: 6 }}>No disponible aún</span>
         </button>
-        <button className="opt-card" onClick={() => onPick("import")}>
+        <button className="opt-card" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
           <div className="opt-ico">📋</div>
           <strong>Importar por ID</strong>
           <span className="muted">Duplica un asistente existente usando su ID.</span>
+          <span className="plan-tag" style={{ background: "var(--muted)", marginTop: 6 }}>No disponible aún</span>
         </button>
         <button className="opt-card" onClick={() => onPick("blank")}>
           <div className="opt-ico">⬜</div>
