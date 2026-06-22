@@ -11,13 +11,11 @@ const TABS = ["Builder", "Chat Lab", "Knowledge Lab"] as const;
 const SUB = ["Global Prompt", "Greeting", "Fields & Values"] as const;
 const TOOLKIT = [
   "Chat Settings",
-  "Autopilot",
   "Tools & APIs",
   "Map Custom Fields",
   "Knowledge Base",
   "Calendars",
   "Find & Replace",
-  "Team Notes",
 ] as const;
 const MODELS = ["gpt-4.1", "gpt-4.1-mini", "gpt-4o"];
 
