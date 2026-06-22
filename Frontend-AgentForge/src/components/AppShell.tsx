@@ -31,7 +31,6 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Deploy",
     items: [
       { key: "tags", label: "Active Tags", href: "/tags", icon: "🏷️" },
-      { key: "integrations", label: "Integraciones", href: "/integrations", icon: "🔌" },
     ],
   },
 ];
