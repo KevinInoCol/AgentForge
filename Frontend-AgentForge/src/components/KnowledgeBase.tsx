@@ -47,7 +47,7 @@ export function KnowledgeBase({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div className="form-wrap">
+    <div>
       <p className="muted" style={{ maxWidth: 620 }}>
         Sube documentos (PDF o TXT) con la info del negocio: catálogo, precios, servicios,
         políticas, FAQs. El agente los consultará con la herramienta <strong>Base de Conocimiento</strong>
