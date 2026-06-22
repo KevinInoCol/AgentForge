@@ -92,10 +92,10 @@ export function AppShell({
         ))}
 
         <div className="sidebar-footer">
-          <div className="balance">
-            <span>Balance</span>
-            <strong>$0.00</strong>
-          </div>
+          <a href="/planes" className="balance" style={{ textDecoration: "none" }}>
+            <span>Plan</span>
+            <strong style={{ color: "var(--accent-2)" }}>Pro</strong>
+          </a>
           <a href="/planes" className={`nav-item ${active === "planes" ? "active" : ""}`}>
             <span className="ico">💳</span>Planes
           </a>
