@@ -149,6 +149,18 @@ textarea { min-height: 200px; resize: vertical; font-family: ui-monospace, monos
 .toolkit-panel { padding: 14px; background: #fbfbfd; border-bottom: 1px solid var(--border); font-size: 13px; }
 .soon { color: var(--muted); font-size: 13px; }
 
+/* ── Planes ──────────────────────────────────────── */
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 18px; }
+.plan-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; }
+.plan-card.highlight { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2); }
+.plan-name { font-size: 16px; font-weight: 700; }
+.plan-tag { font-size: 11px; color: #fff; background: var(--accent-2); border-radius: 999px; padding: 2px 8px; align-self: flex-start; margin-bottom: 8px; }
+.plan-price { font-size: 30px; font-weight: 800; margin: 8px 0 2px; }
+.plan-price small { font-size: 13px; font-weight: 500; color: var(--muted); }
+.plan-features { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
+.plan-features li { font-size: 13px; display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
+.plan-features li::before { content: "✓"; color: var(--green); font-weight: 700; }
+
 /* ── Chat Lab ────────────────────────────────────── */
 .chatlab { display: flex; flex-direction: column; height: 62vh; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden; }
 .chatlab-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }

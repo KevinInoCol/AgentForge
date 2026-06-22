@@ -96,6 +96,9 @@ export function AppShell({
             <span>Balance</span>
             <strong>$0.00</strong>
           </div>
+          <a href="/planes" className={`nav-item ${active === "planes" ? "active" : ""}`}>
+            <span className="ico">💳</span>Planes
+          </a>
           <a href="/settings" className="nav-item">
             <span className="ico">⚙️</span>Ajustes
           </a>
