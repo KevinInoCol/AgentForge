@@ -73,7 +73,7 @@ export default function CredentialsPage() {
         Integrations (permisos de Conversations, Contacts, Locations).
       </p>
 
-      <div className="form-wrap panel" style={{ padding: 20, marginTop: 16 }}>
+      <div className="panel" style={{ padding: 20, marginTop: 16 }}>
         <label>Location ID</label>
         <input value={locationId} onChange={(e) => setLocationId(e.target.value)} placeholder="Ej. cmqd...qk8q" />
 

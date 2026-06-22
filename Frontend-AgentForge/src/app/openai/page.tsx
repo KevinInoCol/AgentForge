@@ -57,7 +57,7 @@ export default function OpenAICredentialsPage() {
         <strong> tu cuenta de OpenAI</strong>. La consigues en platform.openai.com → API keys.
       </p>
 
-      <div className="form-wrap panel" style={{ padding: 20, marginTop: 16 }}>
+      <div className="panel" style={{ padding: 20, marginTop: 16 }}>
         <label>API key de OpenAI</label>
         <input
           type="password"
