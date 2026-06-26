@@ -95,7 +95,7 @@ tbody tr:hover { background: var(--hover); }
 .id-mono { font-family: ui-monospace, monospace; color: var(--muted); font-size: 12px; }
 
 .actions { display: flex; gap: 6px; justify-content: flex-end; }
-.icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; color: #475065; transition: background .12s ease, color .12s ease, border-color .12s ease; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; color: #475065; font-size: 14px; line-height: 1; text-decoration: none; transition: background .12s ease, color .12s ease, border-color .12s ease; }
 .icon-btn:hover { background: var(--hover); border-color: var(--accent-2); color: var(--accent-2); }
 .icon-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.06); }
 
