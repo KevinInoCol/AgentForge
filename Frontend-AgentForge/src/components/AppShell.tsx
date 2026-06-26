@@ -94,7 +94,7 @@ export function AppShell({
         <div className="sidebar-footer">
           <a href="/planes" className="balance" style={{ textDecoration: "none" }}>
             <span>Plan</span>
-            <strong style={{ color: "var(--accent-2)" }}>Pro</strong>
+            <strong style={{ color: "#60a5fa" }}>Pro</strong>
           </a>
           <a href="/planes" className={`nav-item ${active === "planes" ? "active" : ""}`}>
             <span className="ico">💳</span>Planes
@@ -102,7 +102,7 @@ export function AppShell({
           <a href="/settings" className="nav-item">
             <span className="ico">⚙️</span>Ajustes
           </a>
-          {email && <div className="muted" style={{ fontSize: 11, padding: "6px 10px 0" }}>{email}</div>}
+          {email && <div style={{ fontSize: 11, padding: "6px 10px 0", color: "#7c8aa3" }}>{email}</div>}
           <div className="nav-item" style={{ cursor: "pointer" }} onClick={logout}>
             <span className="ico">🚪</span>Cerrar sesión
           </div>
