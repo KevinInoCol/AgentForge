@@ -52,11 +52,10 @@ function Menu({ onPick }: { onPick: (s: Step) => void }) {
           <span className="muted">Describe tu negocio y la IA redacta el asistente por ti.</span>
           <span className="plan-tag" style={{ background: "var(--muted)", marginTop: 6 }}>No disponible aún</span>
         </button>
-        <button className="opt-card" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+        <button className="opt-card" onClick={() => onPick("import")}>
           <div className="opt-ico">📋</div>
           <strong>Importar por ID</strong>
-          <span className="muted">Duplica un asistente existente usando su ID.</span>
-          <span className="plan-tag" style={{ background: "var(--muted)", marginTop: 6 }}>No disponible aún</span>
+          <span className="muted">Duplica un asistente existente usando su ID (la copia queda en borrador).</span>
         </button>
         <button className="opt-card" onClick={() => onPick("blank")}>
           <div className="opt-ico">⬜</div>
