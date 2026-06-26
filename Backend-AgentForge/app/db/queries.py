@@ -221,6 +221,17 @@ async def get_document(document_id: str) -> dict | None:
     return res.data[0] if res.data else None
 
 
+async def workspace_contacts(workspace_id: str) -> list[dict]:
+    """Contactos del workspace con nº de interacciones y última actividad."""
+    def _q():
+        return get_supabase().rpc(
+            "agentforge_workspace_contacts", {"p_workspace_id": workspace_id}
+        ).execute()
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
 async def agent_has_knowledge(agent_id: str) -> bool:
     def _q():
         return (

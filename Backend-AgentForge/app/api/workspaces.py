@@ -13,6 +13,7 @@ from app.db.queries import (
     get_location_by_owner,
     insert_workspace,
     update_location_row,
+    workspace_contacts,
 )
 from app.integrations.ghl.client import GHLClient
 
@@ -68,6 +69,19 @@ async def test_ghl(body: GHLConnectIn, user_id: str = Depends(get_current_user_i
 async def get_workspace(workspace_id: str, user_id: str = Depends(get_current_user_id)):
     ws = await require_owned_workspace(workspace_id, user_id)
     return _status(ws)
+
+
+@router.get("/{workspace_id}/contacts")
+async def get_contacts(workspace_id: str, user_id: str = Depends(get_current_user_id)):
+    """Contactos con los que la IA ha conversado + métricas de interacción."""
+    await require_owned_workspace(workspace_id, user_id)
+    contacts = await workspace_contacts(workspace_id)
+    total_interactions = sum(c.get("interactions") or 0 for c in contacts)
+    return {
+        "contacts": contacts,
+        "total_contacts": len(contacts),
+        "total_interactions": total_interactions,
+    }
 
 
 @router.post("/{workspace_id}/openai")

@@ -82,6 +82,24 @@ export async function connectGHL(workspaceId: string, ghl_location_id: string, p
   }) as Promise<Workspace>;
 }
 
+// ── Contactos / métricas ────────────────────────────────────────
+export type Contact = {
+  conversation_id: string;
+  ghl_contact_id: string;
+  contact_name: string | null;
+  agent_name: string | null;
+  interactions: number;
+  last_at: string | null;
+};
+
+export async function getContacts(workspaceId: string): Promise<{
+  contacts: Contact[];
+  total_contacts: number;
+  total_interactions: number;
+}> {
+  return req(`/api/workspaces/${workspaceId}/contacts`);
+}
+
 // ── Agentes ─────────────────────────────────────────────────────
 export async function listAgents(workspaceId: string): Promise<{ agents: Agent[] }> {
   return req(`/api/agents?workspace_id=${workspaceId}`);

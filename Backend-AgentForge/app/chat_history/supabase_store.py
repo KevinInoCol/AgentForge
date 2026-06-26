@@ -8,7 +8,12 @@ import asyncio
 from app.db.supabase import get_supabase
 
 
-async def get_or_create_conversation(location_id: str, contact_id: str) -> dict:
+async def get_or_create_conversation(
+    location_id: str,
+    contact_id: str,
+    contact_name: str | None = None,
+    agent_id: str | None = None,
+) -> dict:
     """Devuelve la conversación (la crea si no existe). Incluye human_handoff."""
     def _get():
         return (
@@ -23,13 +28,31 @@ async def get_or_create_conversation(location_id: str, contact_id: str) -> dict:
 
     res = await asyncio.to_thread(_get)
     if res.data:
-        return res.data[0]
+        convo = res.data[0]
+        # Completar nombre si llegó y no estaba guardado.
+        if contact_name and not convo.get("contact_name"):
+            def _upd():
+                return (
+                    get_supabase()
+                    .table("agentforge_conversations")
+                    .update({"contact_name": contact_name})
+                    .eq("id", convo["id"])
+                    .execute()
+                )
+
+            await asyncio.to_thread(_upd)
+        return convo
 
     def _insert():
         return (
             get_supabase()
             .table("agentforge_conversations")
-            .insert({"location_id": location_id, "ghl_contact_id": contact_id})
+            .insert({
+                "location_id": location_id,
+                "ghl_contact_id": contact_id,
+                "contact_name": contact_name,
+                "agent_id": agent_id,
+            })
             .execute()
         )
 

@@ -50,6 +50,12 @@ async def ghl_inbound(request: Request):
     text = data.get("message") or data.get("body") or ""
     audio_url = data.get("multimedia") or None  # URL del adjunto (nota de voz)
     channel = _normalize_channel(data.get("messageType") or data.get("type"))
+    # Nombre del contacto (viene en la raíz del payload de GHL, no en customData).
+    contact_name = (
+        payload.get("full_name")
+        or " ".join(filter(None, [payload.get("first_name"), payload.get("last_name")]))
+        or None
+    )
 
     # Necesitamos tenant + contacto, y al menos texto O audio.
     if not location_id or not contact_id or (not text and not audio_url):
@@ -61,7 +67,7 @@ async def ghl_inbound(request: Request):
 
     async def _process(combined: str) -> None:
         try:
-            await process_turn(location_id, contact_id, combined, channel=channel, audio_url=audio_url)
+            await process_turn(location_id, contact_id, combined, channel=channel, audio_url=audio_url, contact_name=contact_name)
         except Exception:  # noqa: BLE001 — no romper el buffer por un fallo de turno
             logger.exception("Error procesando turno (%s/%s)", location_id, contact_id)
 

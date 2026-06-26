@@ -25,6 +25,7 @@ async def process_turn(
     text: str,
     channel: str = "SMS",
     audio_url: str | None = None,
+    contact_name: str | None = None,
 ) -> None:
     """Procesa el mensaje (texto o audio) y responde por GHL."""
     logger.warning(
@@ -45,7 +46,9 @@ async def process_turn(
         return
 
     # 3. Conversación + guarda de handoff humano
-    conversation = await get_or_create_conversation(location["id"], contact_id)
+    conversation = await get_or_create_conversation(
+        location["id"], contact_id, contact_name=contact_name, agent_id=agent_row["id"]
+    )
     if conversation.get("human_handoff"):
         logger.warning("[turn] ⏸ Handoff humano activo; IA en pausa (%s)", contact_id)
         return
