@@ -58,9 +58,9 @@ function Menu({ onPick }: { onPick: (s: Step) => void }) {
           <span className="muted">Duplica un asistente existente usando su ID (la copia queda en borrador).</span>
         </button>
         <button className="opt-card" onClick={() => onPick("blank")}>
-          <div className="opt-ico">⬜</div>
-          <strong>Lienzo en blanco</strong>
-          <span className="muted">Empieza sin configuración y arma el asistente desde cero.</span>
+          <div className="opt-ico">🆕</div>
+          <strong>Agente nuevo</strong>
+          <span className="muted">Empieza desde cero y arma tu agente como quieras.</span>
         </button>
       </div>
     </>
@@ -179,8 +179,8 @@ function BlankStep({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      <h2>Crear asistente en blanco</h2>
-      <p className="muted">Empieza con una hoja limpia y configura todo desde cero.</p>
+      <h2>Agente nuevo</h2>
+      <p className="muted">Empieza desde cero y configura tu agente como quieras.</p>
       <label>Nombre del asistente</label>
       <input
         value={name}
