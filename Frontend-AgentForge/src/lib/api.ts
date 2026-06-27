@@ -123,6 +123,31 @@ export async function getContacts(workspaceId: string): Promise<{
   return req(`/api/workspaces/${workspaceId}/contacts`);
 }
 
+// ── Análisis de conversaciones ──────────────────────────────────
+export type UnrespondedContact = {
+  conversation_id: string;
+  ghl_contact_id: string;
+  contact_name: string | null;
+  agent_name: string | null;
+  last_at: string | null;
+  analysis_reason: string | null;
+  analysis_objection: string | null;
+  analysis_recommendation: string | null;
+  analyzed_at: string | null;
+};
+
+export async function getUnresponded(workspaceId: string): Promise<{ contacts: UnrespondedContact[] }> {
+  return req(`/api/workspaces/${workspaceId}/unresponded`);
+}
+
+export async function analyzeConversation(workspaceId: string, conversationId: string): Promise<{
+  reason: string;
+  objection: string;
+  recommendation: string;
+}> {
+  return req(`/api/workspaces/${workspaceId}/conversations/${conversationId}/analyze`, { method: "POST" });
+}
+
 // ── Agentes ─────────────────────────────────────────────────────
 export async function listAgents(workspaceId: string): Promise<{ agents: Agent[] }> {
   return req(`/api/agents?workspace_id=${workspaceId}`);

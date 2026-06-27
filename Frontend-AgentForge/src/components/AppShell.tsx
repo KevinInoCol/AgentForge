@@ -12,6 +12,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { key: "inbox", label: "Inbox", href: "/inbox", icon: "✉️" },
       { key: "contacts", label: "Contactos", href: "/contacts", icon: "👥" },
+      { key: "analisis", label: "Análisis", href: "/analisis", icon: "📊" },
     ],
   },
   {

@@ -319,6 +319,29 @@ async def replace_stage_routes(location_id: str, pipeline_id: str, routes: list[
         await asyncio.to_thread(_ins)
 
 
+async def workspace_unresponded(workspace_id: str) -> list[dict]:
+    def _q():
+        return get_supabase().rpc("agentforge_unresponded", {"p_workspace_id": workspace_id}).execute()
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
+async def get_conversation(conversation_id: str) -> dict | None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_conversations")
+            .select("*")
+            .eq("id", conversation_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
 async def due_followups() -> list[dict]:
     """Conversaciones candidatas a recibir un seguimiento (RPC)."""
     def _q():

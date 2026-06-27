@@ -9,7 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.auth import get_current_user_id, require_owned_workspace
+from app.chat_history.supabase_store import update_conversation
+from app.core.agent_factory import resolve_openai_key
+from app.core.analysis import analyze_conversation
 from app.db.queries import (
+    get_agent,
+    get_conversation,
     get_location_by_owner,
     insert_workspace,
     list_stage_routes,
@@ -17,6 +22,7 @@ from app.db.queries import (
     update_location_row,
     upsert_pipeline,
     workspace_contacts,
+    workspace_unresponded,
 )
 from app.integrations.ghl.client import GHLClient
 
@@ -72,6 +78,39 @@ async def test_ghl(body: GHLConnectIn, user_id: str = Depends(get_current_user_i
 async def get_workspace(workspace_id: str, user_id: str = Depends(get_current_user_id)):
     ws = await require_owned_workspace(workspace_id, user_id)
     return _status(ws)
+
+
+@router.get("/{workspace_id}/unresponded")
+async def get_unresponded(workspace_id: str, user_id: str = Depends(get_current_user_id)):
+    """Contactos que no respondieron, con su análisis (para la pestaña Análisis)."""
+    await require_owned_workspace(workspace_id, user_id)
+    return {"contacts": await workspace_unresponded(workspace_id)}
+
+
+@router.post("/{workspace_id}/conversations/{conversation_id}/analyze")
+async def analyze_one(workspace_id: str, conversation_id: str, user_id: str = Depends(get_current_user_id)):
+    """Analiza bajo demanda por qué un contacto no avanzó (consume tokens)."""
+    ws = await require_owned_workspace(workspace_id, user_id)
+    convo = await get_conversation(conversation_id)
+    if not convo or convo.get("location_id") != workspace_id:
+        raise HTTPException(404, "Conversación no encontrada")
+    api_key = resolve_openai_key(ws)
+    if not api_key:
+        raise HTTPException(400, "Configura tu API key de OpenAI en 🧠 Credenciales OpenAI.")
+    agent = await get_agent(convo["agent_id"]) if convo.get("agent_id") else None
+    persona = agent["system_prompt"] if agent else ""
+    model = agent["model"] if agent else "gpt-4.1"
+
+    analysis = await analyze_conversation(conversation_id, persona, model, api_key)
+    from datetime import datetime, timezone
+
+    await update_conversation(conversation_id, {
+        "analysis_reason": analysis.get("reason"),
+        "analysis_objection": analysis.get("objection"),
+        "analysis_recommendation": analysis.get("recommendation"),
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return analysis
 
 
 @router.get("/{workspace_id}/contacts")
