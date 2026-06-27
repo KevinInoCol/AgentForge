@@ -46,6 +46,7 @@ class AgentUpdate(BaseModel):
     tools: list[str] | None = None
     followups_enabled: bool | None = None
     followup_messages: list[str] | None = None
+    followup_mode: str | None = None  # 'fixed' | 'ai'
 
 
 class GenerateIn(BaseModel):

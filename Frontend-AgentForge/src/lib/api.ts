@@ -15,6 +15,7 @@ export type Agent = {
   tools: string[];
   followups_enabled?: boolean;
   followup_messages?: string[];
+  followup_mode?: "fixed" | "ai";
   created_at: string;
   updated_at: string;
 };
@@ -117,7 +118,12 @@ export async function createAgent(workspaceId: string, input: AgentInput) {
 
 export async function updateAgent(
   id: string,
-  input: Partial<AgentInput> & { published?: boolean; followups_enabled?: boolean; followup_messages?: string[] },
+  input: Partial<AgentInput> & {
+    published?: boolean;
+    followups_enabled?: boolean;
+    followup_messages?: string[];
+    followup_mode?: "fixed" | "ai";
+  },
 ) {
   return req(`/api/agents/${id}`, { method: "PUT", body: JSON.stringify(input) });
 }
