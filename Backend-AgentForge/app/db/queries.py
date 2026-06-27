@@ -232,6 +232,93 @@ async def workspace_contacts(workspace_id: str) -> list[dict]:
     return res.data or []
 
 
+async def upsert_pipeline(location_id: str, pipeline_id: str, name: str, stages: list[dict]) -> None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_pipelines")
+            .upsert(
+                {"location_id": location_id, "pipeline_id": pipeline_id, "name": name, "stages": stages},
+                on_conflict="location_id,pipeline_id",
+            )
+            .execute()
+        )
+
+    await asyncio.to_thread(_q)
+
+
+async def get_pipeline_cache(location_id: str, pipeline_id: str) -> dict | None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_pipelines")
+            .select("*")
+            .eq("location_id", location_id)
+            .eq("pipeline_id", pipeline_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
+async def list_stage_routes(location_id: str) -> list[dict]:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_stage_routes")
+            .select("pipeline_id, stage_id, agent_id")
+            .eq("location_id", location_id)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
+async def get_stage_route(location_id: str, pipeline_id: str, stage_id: str) -> dict | None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_stage_routes")
+            .select("agent_id")
+            .eq("location_id", location_id)
+            .eq("pipeline_id", pipeline_id)
+            .eq("stage_id", stage_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
+async def replace_stage_routes(location_id: str, pipeline_id: str, routes: list[dict]) -> None:
+    """Reemplaza las rutas de un pipeline (borra las previas e inserta las nuevas)."""
+    def _del():
+        return (
+            get_supabase()
+            .table("agentforge_stage_routes")
+            .delete()
+            .eq("location_id", location_id)
+            .eq("pipeline_id", pipeline_id)
+            .execute()
+        )
+
+    await asyncio.to_thread(_del)
+    rows = [
+        {"location_id": location_id, "pipeline_id": pipeline_id, "stage_id": r["stage_id"], "agent_id": r["agent_id"]}
+        for r in routes
+        if r.get("agent_id")
+    ]
+    if rows:
+        def _ins():
+            return get_supabase().table("agentforge_stage_routes").insert(rows).execute()
+
+        await asyncio.to_thread(_ins)
+
+
 async def due_followups() -> list[dict]:
     """Conversaciones candidatas a recibir un seguimiento (RPC)."""
     def _q():

@@ -50,6 +50,26 @@ class GHLClient:
         resp.raise_for_status()
         return True
 
+    async def list_pipelines(self, location_id: str) -> dict:
+        """Pipelines y etapas de la sub-cuenta (Opportunities API, Version 2021-07-28)."""
+        resp = await self._http.get(
+            "/opportunities/pipelines",
+            params={"locationId": location_id},
+            headers={"Version": "2021-07-28"},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def move_opportunity(self, opportunity_id: str, pipeline_id: str, stage_id: str) -> dict:
+        """Mueve una oportunidad a otra etapa del embudo."""
+        resp = await self._http.put(
+            f"/opportunities/{opportunity_id}",
+            json={"pipelineId": pipeline_id, "pipelineStageId": stage_id},
+            headers={"Version": "2021-07-28"},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def add_tag(self, contact_id: str, tag: str) -> dict:
         resp = await self._http.post(
             f"/contacts/{contact_id}/tags", json={"tags": [tag]}

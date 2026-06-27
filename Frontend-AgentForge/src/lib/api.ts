@@ -85,6 +85,26 @@ export async function connectGHL(workspaceId: string, ghl_location_id: string, p
   }) as Promise<Workspace>;
 }
 
+// ── Embudos / pipelines ─────────────────────────────────────────
+export type Stage = { id: string; name: string; position: number };
+export type Pipeline = { id: string; name: string; stages: Stage[] };
+export type StageRoute = { pipeline_id: string; stage_id: string; agent_id: string | null };
+
+export async function getPipelines(workspaceId: string): Promise<{ pipelines: Pipeline[] }> {
+  return req(`/api/workspaces/${workspaceId}/pipelines`);
+}
+
+export async function getRoutes(workspaceId: string): Promise<{ routes: StageRoute[] }> {
+  return req(`/api/workspaces/${workspaceId}/routes`);
+}
+
+export async function saveRoutes(workspaceId: string, pipeline_id: string, routes: { stage_id: string; agent_id: string | null }[]) {
+  return req(`/api/workspaces/${workspaceId}/routes`, {
+    method: "POST",
+    body: JSON.stringify({ pipeline_id, routes }),
+  });
+}
+
 // ── Contactos / métricas ────────────────────────────────────────
 export type Contact = {
   conversation_id: string;

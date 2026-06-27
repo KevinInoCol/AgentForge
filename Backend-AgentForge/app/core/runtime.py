@@ -12,7 +12,9 @@ from app.core.transcription import transcribe_audio
 from app.db.queries import (
     agent_has_knowledge,
     get_active_agent_for_location,
+    get_agent,
     get_location_by_ghl_id,
+    get_stage_route,
 )
 from app.integrations.ghl.client import GHLClient
 from app.tools.knowledge import get_knowledge_tool
@@ -27,6 +29,9 @@ async def process_turn(
     channel: str = "SMS",
     audio_url: str | None = None,
     contact_name: str | None = None,
+    pipeline_id: str | None = None,
+    stage_id: str | None = None,
+    opportunity_id: str | None = None,
 ) -> None:
     """Procesa el mensaje (texto o audio) y responde por GHL."""
     logger.warning(
@@ -40,8 +45,17 @@ async def process_turn(
         logger.warning("[turn] ❌ Sub-cuenta desconocida: %s (conéctala en Credenciales HighLevel)", ghl_location_id)
         return
 
-    # 2. Agente activo de la sub-cuenta
-    agent_row = await get_active_agent_for_location(location["id"])
+    # 2. Elegir agente: por etapa del embudo (si aplica) o el agente publicado.
+    agent_row = None
+    if pipeline_id and stage_id:
+        route = await get_stage_route(location["id"], pipeline_id, stage_id)
+        if route and route.get("agent_id"):
+            cand = await get_agent(route["agent_id"])
+            if cand and cand.get("published") and cand.get("enabled"):
+                agent_row = cand
+                logger.warning("[turn] 🎯 enrutado por etapa %s → agente '%s'", stage_id, cand["name"])
+    if not agent_row:
+        agent_row = await get_active_agent_for_location(location["id"])
     if not agent_row:
         logger.warning("[turn] ❌ Sin agente PUBLICADO en el workspace %s (publícalo)", location["id"])
         return

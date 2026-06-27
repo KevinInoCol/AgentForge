@@ -18,6 +18,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Build",
     items: [
       { key: "assistants", label: "Asistentes", href: "/", icon: "🤖" },
+      { key: "embudos", label: "Embudos", href: "/embudos", icon: "🎯" },
     ],
   },
   {

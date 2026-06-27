@@ -12,7 +12,10 @@ from app.auth import get_current_user_id, require_owned_workspace
 from app.db.queries import (
     get_location_by_owner,
     insert_workspace,
+    list_stage_routes,
+    replace_stage_routes,
     update_location_row,
+    upsert_pipeline,
     workspace_contacts,
 )
 from app.integrations.ghl.client import GHLClient
@@ -82,6 +85,47 @@ async def get_contacts(workspace_id: str, user_id: str = Depends(get_current_use
         "total_contacts": len(contacts),
         "total_interactions": total_interactions,
     }
+
+
+class RoutesIn(BaseModel):
+    pipeline_id: str
+    routes: list[dict]  # [{stage_id, agent_id}]
+
+
+@router.get("/{workspace_id}/pipelines")
+async def get_pipelines(workspace_id: str, user_id: str = Depends(get_current_user_id)):
+    """Trae los pipelines/etapas desde GHL y los cachea. Requiere GHL conectado."""
+    ws = await require_owned_workspace(workspace_id, user_id)
+    if not ws.get("ghl_location_id") or not ws.get("private_integration_token"):
+        raise HTTPException(400, "Conecta HighLevel (Credenciales) para cargar tus embudos.")
+    client = GHLClient(ws["private_integration_token"])
+    try:
+        data = await client.list_pipelines(ws["ghl_location_id"])
+    finally:
+        await client.aclose()
+
+    pipelines = []
+    for p in data.get("pipelines", []):
+        stages = [
+            {"id": s.get("id"), "name": s.get("name"), "position": s.get("position", 0)}
+            for s in p.get("stages", [])
+        ]
+        await upsert_pipeline(workspace_id, p["id"], p.get("name"), stages)
+        pipelines.append({"id": p["id"], "name": p.get("name"), "stages": stages})
+    return {"pipelines": pipelines}
+
+
+@router.get("/{workspace_id}/routes")
+async def get_routes(workspace_id: str, user_id: str = Depends(get_current_user_id)):
+    await require_owned_workspace(workspace_id, user_id)
+    return {"routes": await list_stage_routes(workspace_id)}
+
+
+@router.post("/{workspace_id}/routes")
+async def save_routes(workspace_id: str, body: RoutesIn, user_id: str = Depends(get_current_user_id)):
+    await require_owned_workspace(workspace_id, user_id)
+    await replace_stage_routes(workspace_id, body.pipeline_id, body.routes)
+    return {"ok": True, "saved": len([r for r in body.routes if r.get("agent_id")])}
 
 
 @router.post("/{workspace_id}/openai")

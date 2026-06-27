@@ -56,6 +56,10 @@ async def ghl_inbound(request: Request):
         or " ".join(filter(None, [payload.get("first_name"), payload.get("last_name")]))
         or None
     )
+    # Embudo: etapa del lead (para enrutar al agente de esa etapa). Opcional.
+    pipeline_id = data.get("pipelineId") or None
+    stage_id = data.get("stageId") or None
+    opportunity_id = data.get("opportunityId") or None
 
     # Necesitamos tenant + contacto, y al menos texto O audio.
     if not location_id or not contact_id or (not text and not audio_url):
@@ -67,7 +71,11 @@ async def ghl_inbound(request: Request):
 
     async def _process(combined: str) -> None:
         try:
-            await process_turn(location_id, contact_id, combined, channel=channel, audio_url=audio_url, contact_name=contact_name)
+            await process_turn(
+                location_id, contact_id, combined, channel=channel, audio_url=audio_url,
+                contact_name=contact_name, pipeline_id=pipeline_id, stage_id=stage_id,
+                opportunity_id=opportunity_id,
+            )
         except Exception:  # noqa: BLE001 — no romper el buffer por un fallo de turno
             logger.exception("Error procesando turno (%s/%s)", location_id, contact_id)
 
