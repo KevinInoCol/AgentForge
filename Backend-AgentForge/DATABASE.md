@@ -47,6 +47,9 @@ create table if not exists agentforge_agents (
   enabled       boolean not null default true,
   published     boolean not null default false,  -- borrador vs publicado (go-live)
   tools         text[] not null default '{}',
+  followups_enabled boolean not null default false,   -- remarketing on/off
+  followup_messages text[] not null default '{}',     -- 3 mensajes fijos (4/8/12h)
+  followup_mode text not null default 'fixed',         -- 'fixed' | 'ai'
   created_at    timestamptz default now(),
   updated_at    timestamptz default now()
 );
@@ -85,7 +88,12 @@ create table if not exists agentforge_conversations (
   location_id    uuid not null references agentforge_locations(id) on delete cascade,
   agent_id       uuid references agentforge_agents(id) on delete set null,
   ghl_contact_id text not null,
-  human_handoff  boolean not null default false,  -- pausa la IA
+  contact_name   text,                              -- nombre del contacto (de GHL)
+  human_handoff  boolean not null default false,    -- pausa la IA
+  channel        text,                              -- canal para responder (FB/WhatsApp/SMS)
+  last_inbound_at    timestamptz,                   -- último mensaje del contacto
+  followup_anchor_at timestamptz,                   -- inicio del reloj de seguimiento
+  followups_sent     int not null default 0,        -- seguimientos enviados en el ciclo
   created_at     timestamptz default now(),
   unique (location_id, ghl_contact_id)
 );
@@ -123,6 +131,42 @@ as $$
   where c.agent_id = p_agent_id
   order by c.embedding <=> p_query_embedding
   limit p_match_count;
+$$;
+
+-- ── Contactos del workspace (con métricas) ───────────────────────
+create or replace function agentforge_workspace_contacts(p_workspace_id uuid)
+returns table (conversation_id uuid, ghl_contact_id text, contact_name text,
+               agent_name text, interactions int, last_at timestamptz)
+language sql stable as $$
+  select c.id, c.ghl_contact_id, c.contact_name, a.name,
+         count(m.id)::int, max(m.created_at)
+  from agentforge_conversations c
+  left join agentforge_agents a   on a.id = c.agent_id
+  left join agentforge_messages m on m.conversation_id = c.id
+  where c.location_id = p_workspace_id
+  group by c.id, c.ghl_contact_id, c.contact_name, a.name
+  order by max(m.created_at) desc nulls last;
+$$;
+
+-- ── Seguimientos pendientes (remarketing) ────────────────────────
+drop function if exists agentforge_due_followups();
+create or replace function agentforge_due_followups()
+returns table (conversation_id uuid, ghl_contact_id text, channel text, pit text,
+               followups_sent int, followup_anchor_at timestamptz, followup_mode text,
+               followup_messages text[], openai_api_key text,
+               agent_system_prompt text, agent_model text)
+language sql stable as $$
+  select c.id, c.ghl_contact_id, c.channel, l.private_integration_token,
+         c.followups_sent, c.followup_anchor_at, a.followup_mode, a.followup_messages,
+         l.openai_api_key, a.system_prompt, a.model
+  from agentforge_conversations c
+  join agentforge_agents a    on a.id = c.agent_id
+  join agentforge_locations l on l.id = c.location_id
+  where a.followups_enabled = true and a.published = true
+    and c.followup_anchor_at is not null
+    and l.private_integration_token is not null
+    and c.followups_sent < 3
+    and (c.last_inbound_at is null or c.last_inbound_at <= c.followup_anchor_at);
 $$;
 ```
 
@@ -164,6 +208,37 @@ create index if not exists agentforge_locations_owner_idx
 ### 005 — Búsqueda de conocimiento (`005_knowledge_search.sql`)
 La función `match_agentforge_chunks` (ver bloque en la sección A).
 **Por qué:** retrieval del RAG por similitud (pgvector), llamada como tool "Base de Conocimiento" desde el backend vía `supabase.rpc(...)`.
+
+### 006 — Contactos + métricas (`006_contacts.sql`)
+```sql
+alter table agentforge_conversations add column if not exists contact_name text;
+-- + función agentforge_workspace_contacts(p_workspace_id) (ver sección A)
+```
+**Por qué:** pestaña Contactos con nombre del contacto, agente y nº de interacciones.
+
+### 007 — Remarketing / seguimientos (`007_remarketing.sql`)
+```sql
+alter table agentforge_agents
+  add column if not exists followups_enabled boolean not null default false,
+  add column if not exists followup_messages text[] not null default '{}';
+alter table agentforge_conversations
+  add column if not exists followup_anchor_at timestamptz,
+  add column if not exists followups_sent int not null default 0,
+  add column if not exists last_inbound_at timestamptz,
+  add column if not exists channel text;
+-- + función agentforge_due_followups() (reemplazada en 008)
+```
+**Por qué:** seguimientos automáticos (4/8/12h) a contactos que no responden.
+
+### 008 — Agente de Seguimiento / modo IA (`008_followup_agent.sql`)
+```sql
+alter table agentforge_agents
+  add column if not exists followup_mode text not null default 'fixed';  -- 'fixed' | 'ai'
+drop function if exists agentforge_due_followups();  -- cambia tipo de retorno
+-- + recrear agentforge_due_followups() ampliada (ver sección A)
+```
+**Por qué:** dos modos de seguimiento — mensajes fijos (sin tokens) o un agente IA que
+analiza la conversación y redacta un mensaje persuasivo (consume tokens del cliente).
 
 ---
 

@@ -7,6 +7,8 @@ alter table agentforge_agents
 
 -- RPC ampliada: además del PIT y los mensajes fijos, devuelve lo que el modo IA
 -- necesita (openai key, persona/prompt y modelo). Tope de 3 seguimientos (4/8/12h).
+-- Se DROP primero porque cambia el tipo de retorno (Postgres no deja con replace).
+drop function if exists agentforge_due_followups();
 create or replace function agentforge_due_followups()
 returns table (
   conversation_id    uuid,
