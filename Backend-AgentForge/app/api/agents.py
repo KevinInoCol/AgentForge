@@ -44,6 +44,8 @@ class AgentUpdate(BaseModel):
     enabled: bool | None = None
     published: bool | None = None
     tools: list[str] | None = None
+    followups_enabled: bool | None = None
+    followup_messages: list[str] | None = None
 
 
 class GenerateIn(BaseModel):

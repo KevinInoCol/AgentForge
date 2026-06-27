@@ -6,6 +6,7 @@ solo ensambla piezas.
 import logging
 
 from app.chat_history import append_message, get_or_create_conversation, load_history
+from app.chat_history.supabase_store import update_conversation
 from app.core.agent_factory import TenantAgentConfig, build_agent, resolve_openai_key
 from app.core.transcription import transcribe_audio
 from app.db.queries import (
@@ -97,4 +98,20 @@ async def process_turn(
     # 6. Persistir (alimenta transcripts + metering)
     await append_message(conversation["id"], "user", text)
     await append_message(conversation["id"], "assistant", reply)
+
+    # 7. Reloj de seguimiento: el contacto acaba de escribir y la IA respondió.
+    #    Anclamos el reloj en ESTA respuesta y reseteamos el contador (si el
+    #    contacto vuelve a escribir, este ciclo se reinicia al próximo turno).
+    from datetime import datetime, timezone
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await update_conversation(
+        conversation["id"],
+        {
+            "last_inbound_at": now_iso,
+            "followup_anchor_at": now_iso,
+            "followups_sent": 0,
+            "channel": channel,
+        },
+    )
     # TODO: record_usage(location_id, tokens) para billing

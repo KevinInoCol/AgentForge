@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ChatLab } from "@/components/ChatLab";
 import { KnowledgeBase } from "@/components/KnowledgeBase";
+import { Remarketing } from "@/components/Remarketing";
 import { generateAgent, getAgent, getWorkspace, updateAgent, type Agent } from "@/lib/api";
 
-const TABS = ["Builder", "Chat Lab", "Knowledge Lab"] as const;
+const TABS = ["Builder", "Chat Lab", "Knowledge Lab", "Remarketing"] as const;
 const SUB = ["Global Prompt", "Greeting", "Fields & Values"] as const;
 const TOOLKIT = [
   "Chat Settings",
@@ -158,7 +159,7 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
 
       <div className="editor-tabs">
         {TABS.map((t) => {
-          const enabledTab = t === "Builder" || t === "Chat Lab" || t === "Knowledge Lab";
+          const enabledTab = t === "Builder" || t === "Chat Lab" || t === "Knowledge Lab" || t === "Remarketing";
           return (
             <div
               key={t}
@@ -175,6 +176,7 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
 
       {tab === "Chat Lab" && <ChatLab agentId={agent.id} />}
       {tab === "Knowledge Lab" && <KnowledgeBase agentId={agent.id} />}
+      {tab === "Remarketing" && <Remarketing agent={agent} />}
 
       {tab === "Builder" && (
       <div className="builder">

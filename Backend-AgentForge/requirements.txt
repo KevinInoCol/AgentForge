@@ -21,5 +21,8 @@ pgvector
 # Buffer / cola
 redis
 
+# Scheduler (seguimientos / remarketing)
+apscheduler
+
 # HTTP
 httpx

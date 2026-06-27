@@ -13,6 +13,8 @@ export type Agent = {
   enabled: boolean;
   published: boolean;
   tools: string[];
+  followups_enabled?: boolean;
+  followup_messages?: string[];
   created_at: string;
   updated_at: string;
 };
@@ -113,7 +115,10 @@ export async function createAgent(workspaceId: string, input: AgentInput) {
   return req(`/api/agents`, { method: "POST", body: JSON.stringify({ workspace_id: workspaceId, ...input }) });
 }
 
-export async function updateAgent(id: string, input: Partial<AgentInput> & { published?: boolean }) {
+export async function updateAgent(
+  id: string,
+  input: Partial<AgentInput> & { published?: boolean; followups_enabled?: boolean; followup_messages?: string[] },
+) {
   return req(`/api/agents/${id}`, { method: "PUT", body: JSON.stringify(input) });
 }
 

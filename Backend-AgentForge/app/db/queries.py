@@ -232,6 +232,15 @@ async def workspace_contacts(workspace_id: str) -> list[dict]:
     return res.data or []
 
 
+async def due_followups() -> list[dict]:
+    """Conversaciones candidatas a recibir un seguimiento (RPC)."""
+    def _q():
+        return get_supabase().rpc("agentforge_due_followups", {}).execute()
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
 async def agent_has_knowledge(agent_id: str) -> bool:
     def _q():
         return (

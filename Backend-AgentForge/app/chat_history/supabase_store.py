@@ -60,6 +60,19 @@ async def get_or_create_conversation(
     return res.data[0]
 
 
+async def update_conversation(conversation_id: str, values: dict) -> None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_conversations")
+            .update(values)
+            .eq("id", conversation_id)
+            .execute()
+        )
+
+    await asyncio.to_thread(_q)
+
+
 async def load_history(conversation_id: str, limit: int = 30) -> list[dict]:
     """Últimos mensajes como [{role, content}, ...] en orden cronológico."""
     def _q():
