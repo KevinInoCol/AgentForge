@@ -2,15 +2,7 @@
 import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
-import {
-  connectGHL,
-  deleteConnection,
-  getConnections,
-  getWorkspace,
-  startGoogleConnect,
-  testGHL,
-  type Connection,
-} from "@/lib/api";
+import { connectGHL, getWorkspace, testGHL } from "@/lib/api";
 import { useWorkspaceId } from "@/lib/useWorkspaceId";
 
 export default function CredentialsPage() {
@@ -24,11 +16,6 @@ export default function CredentialsPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
-  // Conexiones (tools con OAuth: Google Calendar, etc.)
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [connecting, setConnecting] = useState(false);
-  const [connMsg, setConnMsg] = useState<{ type: "ok" | "error"; text: string } | null>(null);
-
   useEffect(() => {
     if (!workspaceId) return;
     getWorkspace(workspaceId)
@@ -37,48 +24,7 @@ export default function CredentialsPage() {
         if (w.ghl_location_id) setLocationId(w.ghl_location_id);
       })
       .catch(() => {});
-    loadConnections();
   }, [workspaceId]);
-
-  // Al volver del OAuth de Google (?google=connected|error).
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get("google");
-    if (p === "connected") setConnMsg({ type: "ok", text: "✅ Google Calendar conectado." });
-    else if (p === "error") setConnMsg({ type: "error", text: "❌ No se pudo conectar Google Calendar. Intenta de nuevo." });
-    if (p) window.history.replaceState({}, "", "/credentials");
-  }, []);
-
-  function loadConnections() {
-    if (!workspaceId) return;
-    getConnections(workspaceId).then((r) => setConnections(r.connections)).catch(() => {});
-  }
-
-  const googleConn = connections.find((c) => c.provider === "google_calendar");
-
-  async function handleConnectGoogle() {
-    if (!workspaceId) return setConnMsg({ type: "error", text: "Inicializando workspace…" });
-    setConnecting(true);
-    setConnMsg(null);
-    try {
-      const { url } = await startGoogleConnect(workspaceId);
-      window.location.href = url; // redirige al consent de Google
-    } catch (e) {
-      setConnMsg({ type: "error", text: e instanceof Error ? e.message : "Error" });
-      setConnecting(false);
-    }
-  }
-
-  async function handleDisconnectGoogle() {
-    if (!googleConn) return;
-    if (!confirm("¿Desconectar Google Calendar? Los agentes dejarán de poder agendar.")) return;
-    try {
-      await deleteConnection(googleConn.id);
-      setConnMsg({ type: "ok", text: "Google Calendar desconectado." });
-      loadConnections();
-    } catch (e) {
-      setConnMsg({ type: "error", text: e instanceof Error ? e.message : "Error" });
-    }
-  }
 
   async function handleTest() {
     if (!locationId || !pit) return setMsg({ type: "error", text: "Completa LocationID y PIT." });
@@ -144,40 +90,6 @@ export default function CredentialsPage() {
           <button className="btn" onClick={handleConnect} disabled={saving}>
             {saving ? "Conectando…" : "Conectar HighLevel"}
           </button>
-        </div>
-      </div>
-
-      <div className="page-head" style={{ marginTop: 40 }}>
-        <h1>Conexiones</h1>
-      </div>
-      <p className="muted" style={{ maxWidth: 620 }}>
-        Conecta servicios externos para darle <strong>herramientas</strong> a tus agentes.
-        Una vez conectado, activa la herramienta en el agente que quieras (pestaña del agente).
-      </p>
-
-      {connMsg && (
-        <div className={connMsg.type === "ok" ? "pill on" : "error"} style={{ marginTop: 12, display: "block", padding: "10px 12px", maxWidth: 620 }}>
-          {connMsg.text}
-        </div>
-      )}
-
-      <div className="panel" style={{ padding: 20, marginTop: 16, maxWidth: 620 }}>
-        <div className="inline" style={{ justifyContent: "space-between", width: "100%" }}>
-          <div>
-            <strong>📅 Google Calendar</strong>
-            <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              {googleConn
-                ? `Conectado${googleConn.account_email ? ` como ${googleConn.account_email}` : ""}.`
-                : "Permite al agente consultar disponibilidad y agendar citas."}
-            </div>
-          </div>
-          {googleConn ? (
-            <button className="btn secondary" onClick={handleDisconnectGoogle}>Desconectar</button>
-          ) : (
-            <button className="btn" onClick={handleConnectGoogle} disabled={connecting}>
-              {connecting ? "Redirigiendo…" : "Conectar"}
-            </button>
-          )}
         </div>
       </div>
     </AppShell>

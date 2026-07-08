@@ -20,6 +20,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { key: "assistants", label: "Asistentes", href: "/", icon: "🤖" },
       { key: "embudos", label: "Embudos", href: "/embudos", icon: "🎯" },
+      { key: "connections", label: "Conexiones", href: "/connections", icon: "🔌" },
     ],
   },
   {
