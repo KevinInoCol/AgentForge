@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import agents, oauth, webhooks, workspaces
+from app.api import agents, connections, oauth, webhooks, workspaces
 from app.core.followups import run_followups
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ app.include_router(oauth.router, prefix="/oauth", tags=["oauth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(workspaces.router, prefix="/api/workspaces", tags=["workspaces"])
+app.include_router(connections.router, prefix="/api/connections", tags=["connections"])
 
 
 @app.get("/")

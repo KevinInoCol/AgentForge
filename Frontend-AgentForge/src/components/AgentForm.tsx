@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import type { AgentInput } from "@/lib/api";
+import { getToolsCatalog, type AgentInput, type ToolSpec } from "@/lib/api";
 
 const DEFAULT_PROMPT = `<Identidad>
 Eres {bot_name}, el asistente de texto del negocio.
@@ -32,15 +32,25 @@ export function AgentForm({
   const [model, setModel] = useState(initial?.model ?? "gpt-4.1");
   const [temperature, setTemperature] = useState(initial?.temperature ?? 0);
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
+  const [tools, setTools] = useState<string[]>(initial?.tools ?? []);
+  const [catalog, setCatalog] = useState<ToolSpec[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getToolsCatalog().then((r) => setCatalog(r.tools)).catch(() => {});
+  }, []);
+
+  function toggleTool(key: string) {
+    setTools((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      await onSubmit({ name, system_prompt: systemPrompt, model, temperature, enabled, tools: [] });
+      await onSubmit({ name, system_prompt: systemPrompt, model, temperature, enabled, tools });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
     } finally {
@@ -83,6 +93,31 @@ export function AgentForm({
         />
         Agente activo (responde mensajes)
       </label>
+
+      {catalog.length > 0 && (
+        <div style={{ marginTop: 22 }}>
+          <label>Herramientas</label>
+          <p className="muted" style={{ fontSize: 13, marginTop: 2, marginBottom: 10 }}>
+            Las que requieren conexión (ej. Google Calendar) solo funcionan si la conectaste en
+            <strong> Credenciales</strong>. La Base de Conocimiento se activa sola al subir documentos.
+          </p>
+          {catalog.map((t) => (
+            <label key={t.key} className="inline" style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+              <input
+                type="checkbox" style={{ width: "auto", marginTop: 3 }}
+                checked={tools.includes(t.key)}
+                onChange={() => toggleTool(t.key)}
+              />
+              <span>
+                <strong>{t.label}</strong>
+                {t.provider && <span className="muted" style={{ fontSize: 12 }}> · requiere conexión</span>}
+                <br />
+                <span className="muted" style={{ fontSize: 12 }}>{t.description}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 

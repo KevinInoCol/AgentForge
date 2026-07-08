@@ -1,6 +1,6 @@
 # Backend-AgentForge
 
-Runtime multi-tenant de agentes de **texto** para GoHighLevel (SaaS de ARIA).
+Runtime multi-tenant de agentes de **texto** para GoHighLevel (SaaS de Inofuente).
 Python + FastAPI + LangChain + Supabase (Postgres/pgvector) + Redis.
 
 ## Idea central (multi-tenant)

@@ -17,7 +17,7 @@ from app.config import settings
 
 
 def resolve_openai_key(location: dict | None) -> str | None:
-    """Usa la key de la sub-cuenta si existe; si no, la global de ARIA (.env)."""
+    """Usa la key de la sub-cuenta si existe; si no, la global de Inofuente (.env)."""
     if location and location.get("openai_api_key"):
         return location["openai_api_key"]
     return settings.openai_api_key or None

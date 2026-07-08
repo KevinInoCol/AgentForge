@@ -12,7 +12,6 @@ from app.auth import get_current_user_id, require_owned_agent, require_owned_wor
 from app.core.agent_factory import TenantAgentConfig, build_agent, resolve_openai_key
 from app.core.agent_generator import generate_agent
 from app.db.queries import (
-    agent_has_knowledge,
     create_agent_row,
     delete_agent_row,
     delete_document,
@@ -21,7 +20,7 @@ from app.db.queries import (
     list_documents,
     update_agent_row,
 )
-from app.tools.knowledge import get_knowledge_tool
+from app.tools.catalog import build_tools_for_agent
 
 router = APIRouter()
 
@@ -79,9 +78,7 @@ async def chat(agent_id: str, body: ChatIn, user_id: str = Depends(get_current_u
     if not api_key:
         raise HTTPException(400, "Configura tu API key de OpenAI en 🧠 Credenciales OpenAI antes de probar el agente.")
     cfg = TenantAgentConfig.from_row(agent_row)
-    tools = []
-    if await agent_has_knowledge(agent_id):
-        tools.append(get_knowledge_tool(agent_id, api_key))
+    tools = await build_tools_for_agent(agent_row, ws, api_key)
     agent = build_agent(cfg, api_key=api_key, tools=tools)
     result = await agent.ainvoke({"messages": body.messages})
     return {"reply": result["messages"][-1].content}

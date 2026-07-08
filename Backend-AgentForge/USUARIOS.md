@@ -38,7 +38,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # la PUBLISHABLE/anon (públi
 Desde `Backend-AgentForge`, con el env activo:
 
 ```bash
-conda activate ARIA-AgentForge
+conda activate Inofuente-AgentForge
 python scripts/create_users.py correo1 pass1 correo2 pass2 correo3 pass3
 ```
 

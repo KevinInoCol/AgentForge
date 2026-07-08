@@ -242,6 +242,32 @@ analiza la conversación y redacta un mensaje persuasivo (consume tokens del cli
 
 ---
 
+### 011 — Conexiones a servicios externos (`011_connections.sql`)
+```sql
+create table if not exists agentforge_connections (
+  id uuid primary key default gen_random_uuid(),
+  location_id uuid not null references agentforge_locations(id) on delete cascade,
+  provider text not null,                  -- 'google_calendar'
+  status text not null default 'active',   -- 'active' | 'error' | 'revoked'
+  account_email text,
+  credentials text not null default '',    -- CIFRADO (Fernet) con el token OAuth
+  config jsonb not null default '{}',       -- p.ej. {"calendar_id": "primary"}
+  scopes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique (location_id, provider)
+);
+```
+**Por qué:** habilita **tools con OAuth** por tenant (Nivel 2). Un workspace conecta SU
+cuenta de un proveedor (ej. Google Calendar); esa conexión desbloquea tools que el agente
+usa (`consultar_disponibilidad`, `crear_evento`). Los tokens OAuth se guardan **cifrados**
+(Fernet, clave en `ENCRYPTION_KEY`). Las tools se ensamblan en `app/tools/catalog.py`.
+
+**Requiere en `.env`:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`,
+`ENCRYPTION_KEY`, `FRONTEND_URL`.
+
+---
+
 ## C) Verificación rápida
 
 ```sql
@@ -267,4 +293,5 @@ Supabase directo, activar RLS y definir políticas por `owner_user_id` / `locati
 
 ## Notas de seguridad (pendientes para producción)
 - El **PIT** y la **OpenAI key** se guardan en texto plano. Cifrar (o usar Supabase Vault).
+  (Las **conexiones OAuth** de `agentforge_connections` SÍ se guardan cifradas con Fernet.)
 - Considerar RLS si el frontend llega a consultar Supabase directo.

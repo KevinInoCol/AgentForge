@@ -26,3 +26,6 @@ apscheduler
 
 # HTTP
 httpx
+
+# Cifrado de credenciales de conexiones (tokens OAuth de terceros)
+cryptography

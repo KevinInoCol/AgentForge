@@ -10,14 +10,13 @@ from app.chat_history.supabase_store import update_conversation
 from app.core.agent_factory import TenantAgentConfig, build_agent, resolve_openai_key
 from app.core.transcription import transcribe_audio
 from app.db.queries import (
-    agent_has_knowledge,
     get_active_agent_for_location,
     get_agent,
     get_location_by_ghl_id,
     get_stage_route,
 )
 from app.integrations.ghl.client import GHLClient
-from app.tools.knowledge import get_knowledge_tool
+from app.tools.catalog import build_tools_for_agent
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +90,7 @@ async def process_turn(
     # 4. Historial + agente (con la OpenAI key de la sub-cuenta)
     history = await load_history(conversation["id"])
     cfg = TenantAgentConfig.from_row(agent_row)
-    tools = []
-    if await agent_has_knowledge(cfg.agent_id):
-        tools.append(get_knowledge_tool(cfg.agent_id, api_key))
+    tools = await build_tools_for_agent(agent_row, location, api_key)
     agent = build_agent(cfg, api_key=api_key, tools=tools)
 
     messages = history + [{"role": "user", "content": text}]

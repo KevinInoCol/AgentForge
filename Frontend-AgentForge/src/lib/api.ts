@@ -85,6 +85,39 @@ export async function connectGHL(workspaceId: string, ghl_location_id: string, p
   }) as Promise<Workspace>;
 }
 
+// ── Conexiones (tools con OAuth) + catálogo de tools ────────────
+export type ToolSpec = {
+  key: string;
+  label: string;
+  description: string;
+  provider: string | null; // proveedor OAuth requerido, o null
+};
+
+export type Connection = {
+  id: string;
+  provider: string;
+  status: string;
+  account_email?: string | null;
+  config?: Record<string, unknown>;
+  created_at: string;
+};
+
+export async function getToolsCatalog(): Promise<{ tools: ToolSpec[] }> {
+  return req(`/api/connections/catalog`);
+}
+
+export async function getConnections(workspaceId: string): Promise<{ connections: Connection[] }> {
+  return req(`/api/connections?workspace_id=${workspaceId}`);
+}
+
+export async function startGoogleConnect(workspaceId: string): Promise<{ url: string }> {
+  return req(`/api/connections/google/start?workspace_id=${workspaceId}`);
+}
+
+export async function deleteConnection(connectionId: string) {
+  return req(`/api/connections/${connectionId}`, { method: "DELETE" });
+}
+
 // ── Embudos / pipelines ─────────────────────────────────────────
 export type Stage = { id: string; name: string; position: number };
 export type Pipeline = { id: string; name: string; stages: Stage[] };

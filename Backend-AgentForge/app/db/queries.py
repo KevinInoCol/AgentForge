@@ -351,6 +351,93 @@ async def due_followups() -> list[dict]:
     return res.data or []
 
 
+# ── Conexiones a servicios externos (tools con OAuth) ────────────────
+
+async def get_connection(location_id: str, provider: str) -> dict | None:
+    """Conexión de un workspace para un proveedor (o None). Incluye el blob cifrado."""
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_connections")
+            .select("*")
+            .eq("location_id", location_id)
+            .eq("provider", provider)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
+async def get_connection_by_id(connection_id: str) -> dict | None:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_connections")
+            .select("id, location_id, provider, status")
+            .eq("id", connection_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0] if res.data else None
+
+
+async def list_connections(location_id: str) -> list[dict]:
+    """Conexiones del workspace SIN el blob de credenciales (para el frontend)."""
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_connections")
+            .select("id, provider, status, account_email, config, scopes, created_at, updated_at")
+            .eq("location_id", location_id)
+            .order("created_at")
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data or []
+
+
+async def upsert_connection(values: dict) -> dict:
+    """Crea/actualiza la conexión (una por location_id+provider)."""
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_connections")
+            .upsert(values, on_conflict="location_id,provider")
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0]
+
+
+async def update_connection(connection_id: str, values: dict) -> dict:
+    def _q():
+        return (
+            get_supabase()
+            .table("agentforge_connections")
+            .update(values)
+            .eq("id", connection_id)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_q)
+    return res.data[0]
+
+
+async def delete_connection(connection_id: str) -> None:
+    def _q():
+        return (
+            get_supabase().table("agentforge_connections").delete().eq("id", connection_id).execute()
+        )
+
+    await asyncio.to_thread(_q)
+
+
 async def agent_has_knowledge(agent_id: str) -> bool:
     def _q():
         return (
