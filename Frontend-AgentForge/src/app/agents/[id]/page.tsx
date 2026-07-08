@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ChatLab } from "@/components/ChatLab";
 import { KnowledgeBase } from "@/components/KnowledgeBase";
 import { Remarketing } from "@/components/Remarketing";
-import { generateAgent, getAgent, getWorkspace, updateAgent, type Agent } from "@/lib/api";
+import { generateAgent, getAgent, getToolsCatalog, getWorkspace, updateAgent, type Agent, type ToolSpec } from "@/lib/api";
 
 const TABS = ["Builder", "Chat Lab", "Knowledge Lab", "Remarketing"] as const;
 const SUB = ["Global Prompt", "Greeting", "Fields & Values"] as const;
@@ -32,6 +32,8 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
   const [model, setModel] = useState("gpt-4.1");
   const [temperature, setTemperature] = useState(0);
   const [enabled, setEnabled] = useState(true);
+  const [tools, setTools] = useState<string[]>([]);
+  const [catalog, setCatalog] = useState<ToolSpec[]>([]);
 
   const [tab, setTab] = useState<(typeof TABS)[number]>("Builder");
   const [sub, setSub] = useState<(typeof SUB)[number]>("Global Prompt");
@@ -52,9 +54,19 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
         setTemperature(a.temperature);
         setEnabled(a.enabled);
         setPublished(a.published);
+        setTools(a.tools ?? []);
       })
       .catch((e) => setError(e.message));
   }, [id]);
+
+  useEffect(() => {
+    getToolsCatalog().then((r) => setCatalog(r.tools)).catch(() => {});
+  }, []);
+
+  function toggleTool(key: string) {
+    setTools((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    setDirty(true);
+  }
 
   function mark<T>(setter: (v: T) => void) {
     return (v: T) => {
@@ -68,7 +80,7 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
     setError(null);
     setNotice(null);
     try {
-      const patch: Record<string, unknown> = { name, system_prompt: prompt, model, temperature, enabled };
+      const patch: Record<string, unknown> = { name, system_prompt: prompt, model, temperature, enabled, tools };
       if (opts.setPublished === true) {
         patch.enabled = true;
         patch.published = true;
@@ -233,6 +245,30 @@ export default function EditAgent({ params }: { params: Promise<{ id: string }> 
                           onChange={(e) => mark(setEnabled)(e.target.checked)} />
                         Agente activo
                       </label>
+                    </>
+                  ) : t === "Tools & APIs" ? (
+                    <>
+                      <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
+                        Las que requieren conexión (ej. Google Calendar) se conectan en{" "}
+                        <a href="/connections">Conexiones</a>. La Base de Conocimiento se activa sola al subir documentos.
+                      </div>
+                      {catalog.length === 0 ? (
+                        <span className="muted" style={{ fontSize: 12 }}>Cargando…</span>
+                      ) : (
+                        catalog.map((tool) => (
+                          <label key={tool.key} className="inline"
+                            style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                            <input type="checkbox" style={{ width: "auto", marginTop: 3 }}
+                              checked={tools.includes(tool.key)} onChange={() => toggleTool(tool.key)} />
+                            <span>
+                              <strong>{tool.label}</strong>
+                              {tool.provider && <span className="muted" style={{ fontSize: 11 }}> · requiere conexión</span>}
+                              <br />
+                              <span className="muted" style={{ fontSize: 12 }}>{tool.description}</span>
+                            </span>
+                          </label>
+                        ))
+                      )}
                     </>
                   ) : (
                     <span className="soon">🚧 Próximamente</span>
